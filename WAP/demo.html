@@ -1,0 +1,54 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>WAP - Validátor formulářů</title>
+		<link href="style.css" rel="stylesheet" type="text/css" />
+		<script src="script.js" type="text/javascript"> </script>
+	</head>
+	<body>
+		<div class = "form">
+			<h2 class="title-form">Vyřízení objednávky</h2>
+			<form id="form" name="form" action="#" method="post">
+   					<div class="form-field">
+   						<label for="name">Jméno *</label>
+     	 				<input type="text" id="name" name="name" class="txt field empty" maxlength = "20"/>
+     	 				<p class="form-hint">Minimálně 2 symboly latinské abecedy</p>
+     	 			</div>
+     	 			<div class="form-field">
+     	 				<label for="surname">Příjmení *</label>
+     	 				<input type="text" id="surname" name="surname" class="txt field empty" maxlength = "20"/>
+     	 				<p class="form-hint">Minimálně 2 symboly latinské abecedy</p>
+     	 			</div>
+	     	 		<div class="form-contacts">
+	     	 			<div class="form-field float-l">
+	      					<label for="email">E-mail *</label>
+	     	 				<input type="text" id="email" name="email" class="txt field empty" />
+	     	 				<p class="form-hint">Příklad: matej@seznam.cz</p>
+	     	 			</div>
+	     	 			<div class="form-field float-r">
+	     	 				<label for="phone">Telefonní číslo *</label>
+	     	 				<input type="phone" id="phone" name="phone" class="txt field empty" maxlength = "16"/>
+	     	 				<p class="form-hint">+420-XXX-XXX-XXX (12 - 16 symbolů)</p>
+	     	 			</div>
+	     	 		</div>
+	     	 		<div class="form-acc-field">
+	     	 			<label for="bank-account">Číslo platební karty *</label>
+	     	 			<input type="bank-account" id="bank-account" name="bank-account" class="txt account-field empty" maxlength = "12" />
+	     	 			<p class="form-hint">Obsahuje 12 čísel</p>
+	     	 		</div>
+	     	 		<div class="form-info">
+      					<label for="msg">Doplňující informace</label>
+      					<textarea id="msg" name="msg" class="txtarea"></textarea>
+      				</div>
+      				<div class="form-button">
+      					<button id="send" type="submit" class="enabled-button">Odeslat</button>
+      				</div>
+   			</form>
+		</div>
+		<div>
+			<p> Author: Anna Ostroukh (xostro00) - <a href="navod.html" target="_blank">návod k použití</a></p>
+		</div>
+	</body>
+</html

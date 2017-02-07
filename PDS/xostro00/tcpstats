@@ -1,0 +1,229 @@
+#!/usr/bin/env python2.7
+import datetime
+from decimal import Decimal
+
+import socket
+
+import struct
+import sys
+import webbrowser
+import dpkt
+from dpkt.tcp import TCP
+from dpkt.ethernet import Ethernet
+from dpkt.ip import IP, IP_PROTO_TCP
+import json
+
+def main():
+    computeTCPStat()
+
+# function parse a packet capture
+# @filename is a name of file which we parse
+# return file_entries - list of dictionaries with parsed tcp data
+def fileParse(filename):
+    f = open(filename, 'rb') # opening a packet file
+    pcap = dpkt.pcap.Reader(f)  # reading a packet file
+    packet_counter = 0  # counter of packets in a file
+    file_entries = []  # list of dictionaries of tcp data entries
+    keys = ('packet #', 'time', 'len', 'seq', 'ack', 'window', 'scale factor', 'payload', 'sum', 'flags', 'source', 'source ip', 'destination', 'destination ip')  # keys for each value in dictionary
+
+    for timestamp, buf in pcap:
+        packet_counter += 1
+        eth = Ethernet(buf)
+
+        if eth.type != dpkt.ethernet.ETH_TYPE_IP:   # if not an IP packet
+            continue
+
+        ip = eth.data
+        dst_ip = socket.inet_ntoa(ip.dst)
+        src_ip = socket.inet_ntoa(ip.src)
+
+        if ip.p != IP_PROTO_TCP:                    # if not a TCP packet
+            print ("No TCP packet found")
+            continue
+
+        tcp = ip.data
+
+        # Allow to decode flags
+        fin_flag = (tcp.flags & dpkt.tcp.TH_FIN) != 0
+        syn_flag = (tcp.flags & dpkt.tcp.TH_SYN) != 0
+        rst_flag = (tcp.flags & dpkt.tcp.TH_RST) != 0
+        psh_flag = (tcp.flags & dpkt.tcp.TH_PUSH) != 0
+        ack_flag = (tcp.flags & dpkt.tcp.TH_ACK) != 0
+        urg_flag = (tcp.flags & dpkt.tcp.TH_URG) != 0
+        ece_flag = (tcp.flags & dpkt.tcp.TH_ECE) != 0
+        cwr_flag = (tcp.flags & dpkt.tcp.TH_CWR) != 0
+
+        # human-readable definitions of flags
+        flags = (("FIN " if fin_flag else "") +
+                ("SYN " if syn_flag else "") +
+                ("RST " if rst_flag else "") +
+                ("PSH " if psh_flag else "") +
+                ("ACK " if ack_flag else "") +
+                ("URG " if urg_flag else "") +
+                ("ECE " if ece_flag else "") +
+                ("CWR " if cwr_flag else ""))
+
+        
+	 # define window scale factor
+        option_list = dpkt.tcp.parse_opts(tcp.opts)
+        for option in option_list:
+            if option[0] == 3:
+                WSCALE = struct.unpack(">b", option[1])
+
+	time = Decimal(datetime.datetime.utcfromtimestamp(timestamp).strftime('%S.%f'))
+
+        # tulip with values of each packet in dictionary
+       	data = (packet_counter, time, len(buf), tcp.seq, tcp.ack, tcp.win, WSCALE[0], len(tcp.data), tcp.sum, flags, tcp.sport, src_ip, tcp.dport, dst_ip)
+
+        tcp_data = dict(zip(keys, data)) # matching keys with values and adding entries to the dictionary
+
+        file_entries.append(tcp_data) # creating a list of dictionaries with parsed tcp data
+
+    f.close()
+    return file_entries
+
+def computeTCPStat():
+    print ("Parsing a file...")
+    file_entries = fileParse(filename)
+
+    timeVal = []        # list of dictionaries with time values
+    outputDict =[]      # output dictionary
+    keysTime = ('packet #', 'time', 'delta')
+
+    curTime = 0         # current time for speed measurements
+
+    print ("Analysing statistics...")
+    for i in range(len(file_entries)):
+        # Setting up reference packet according to SYN flag (TCP connection initiated)
+        if file_entries[i]['flags'] == 'SYN ':
+            refPacket = file_entries[i]['packet #']
+            timeVal.append({'packet #': refPacket, 'time': Decimal(0.000000), 'delta': Decimal(0.000000)})  # Setting up reference time and adding reference packet to dictionary
+
+    # Computing delta and reference time
+    for refPacket in range(len(file_entries) - refPacket):
+        delta = file_entries[refPacket+1]['time'] - file_entries[refPacket]['time']     # Time delta from reference packet
+        time = delta + Decimal(timeVal[refPacket]['time'])         # Time since reference packet
+        packet = refPacket+2
+
+    # Saving time statistics to dictionary
+        dataTime = (packet, time, abs(delta))
+        timeVal.append(dict(zip(keysTime, dataTime)))
+
+    # Getting the receiver and sender parameters of a TCP connection
+    for i in range(len(file_entries)):
+        if file_entries[i]['flags'] == 'SYN ':
+            receiverIP = file_entries[i]['destination ip']
+            receiverWinScale = pow(2, file_entries[i]['scale factor'])
+
+        if file_entries[i]['flags'] == 'SYN ACK ':
+            senderIP = file_entries[i]['destination ip']
+            senderWinScale = pow(2, file_entries[i]['scale factor'])
+
+   # Receiver window
+    for i in range(len(file_entries)):
+        if (file_entries[i]['flags'] != 'SYN ' and file_entries[i]['flags'] != 'SYN ACK ') and file_entries[i]['destination ip'] == receiverIP and file_entries[i]['packet #'] == timeVal[i]['packet #']:
+            recWin = file_entries[i]['window'] * receiverWinScale
+            timeRecWin = timeVal[i]['time']
+            dataRec = (str(timeRecWin), str(recWin))
+            keysRec = ('ReceiverTime', 'RecWin')
+            outputDict.append(dict(zip(keysRec, dataRec)))
+
+    # Sender window
+    for i in range(len(file_entries)):
+        if (file_entries[i]['flags'] != 'SYN ' and file_entries[i]['flags'] != 'SYN ACK ') and file_entries[i]['destination ip'] == senderIP and file_entries[i]['packet #'] == timeVal[i]['packet #']:
+            sendWin = file_entries[i]['window'] * senderWinScale
+            timeSendWin = timeVal[i]['time']
+            dataSend = (str(timeSendWin), str(sendWin))
+            keysSend = ('SenderTime', 'SenderWin')
+            outputDict.append(dict(zip(keysSend, dataSend)))
+
+    # Round trip time
+    for i in range(len(file_entries)):
+        # Receiver RTT
+        if file_entries[i]['flags'] == 'ACK ' and file_entries[i]['destination ip'] == receiverIP and file_entries[i]['packet #'] == timeVal[i]['packet #']:
+           if file_entries[i]['seq'] == file_entries[i-1]['ack'] and file_entries[i-1]['flags'] != 'SYN ACK ' and file_entries[i-1]['flags'] != 'FIN ACK ':
+                rtt = timeVal[i-1]['delta']
+                seqNumber = file_entries[i-1]['seq']
+                dataRtt = (str(rtt * 1000), str(seqNumber))       # Saving rtt converted to [ms]
+                keysRtt = ('RTT', 'Sequence')
+                outputDict.append(dict(zip(keysRtt, dataRtt)))
+
+    # Slow start
+    for i in range(len(file_entries)):
+        # Receiver SS (packets from server)
+        if (file_entries[i]['flags'] == 'SYN ACK ' or file_entries[i]['flags'] == 'ACK ' or file_entries[i]['flags'] == 'FIN ACK ') and file_entries[i]['source ip'] == receiverIP and file_entries[i]['packet #'] == timeVal[i]['packet #']:
+            if file_entries[i]['flags'] == 'SYN ACK ':
+                time = 0            # setting reference time according to the first SYN ACK packet
+            if file_entries[i]['flags'] == 'ACK ' or file_entries[i]['flags'] == 'FIN ACK ':
+                time = time + timeVal[i]['delta']           # time on X-axis will show how RTT is changing since time reference
+            seqNumberSS = file_entries[i]['seq']
+            dataSS = (str(time), str(seqNumberSS))
+            keysSS = ('TimeSS', 'SequenceSS')
+            outputDict.append(dict(zip(keysSS, dataSS)))
+
+        # Sender SS (packets from client)
+        if (file_entries[i]['flags'] == 'SYN ' or file_entries[i]['flags'] == 'ACK ' or file_entries[i]['flags'] == 'FIN ACK ') and file_entries[i]['source ip'] == senderIP and file_entries[i]['packet #'] == timeVal[i]['packet #']:
+            seqNumberSS = file_entries[i]['seq']
+            timeSS = timeVal[i]['time']
+            dataSS = (str(timeSS), str(seqNumberSS))
+            keysSS = ('TimeSSsen', 'SequenceSSsen')
+            outputDict.append(dict(zip(keysSS, dataSS)))
+
+    # Speed of TCP connection in interval 0.01 s
+    timerRange = int((int(timeVal[-1]['time'])+1)/0.01)  # setting up a required amount of steps to look through packets
+
+    for timer in range(timerRange):
+        lastTime = curTime
+        curTime = curTime + 0.01
+        byte = 0            # bytes of receiver
+        byteSen = 0         # bytes of sender
+        bytes =[]
+        bytesSen = []
+
+        for i in range(len(timeVal)):
+            # Receiver speed
+            if lastTime <= timeVal[i]['time'] <= curTime and file_entries[i]['source ip'] == receiverIP and file_entries[i]['packet #'] == timeVal[i]['packet #']:
+                byte = byte + file_entries[i]['len']
+                time = lastTime
+                bytes.append(byte)
+
+            # Sender speed
+            elif lastTime <= timeVal[i]['time'] <= curTime and file_entries[i]['source ip'] == senderIP and file_entries[i]['packet #'] == timeVal[i]['packet #']:
+                byteSen = byteSen + file_entries[i]['len']
+                timeSen = lastTime
+                bytesSen.append(byteSen)
+
+        # computing receiver bytes
+        if bytes:
+            bytessum = max(bytes)
+        else:
+            time = lastTime
+            bytessum = 0
+
+        dataSp = (str(time), str(bytessum))
+        keysSp = ('Time', 'BytesRec')
+        outputDict.append(dict(zip(keysSp, dataSp)))
+
+        # computing sender bytes
+        if bytesSen:
+            bytessumSen = max(bytesSen)
+        else:
+            timeSen = lastTime
+            bytessumSen = 0
+
+        dataSpSen = (str(timeSen), str(bytessumSen))
+        keysSpSen = ('TimeSen', 'BytesSen')
+        outputDict.append(dict(zip(keysSpSen, dataSpSen)))
+
+    # Exporting statistics to JSON log file
+    print ("Exporting statistics...")
+    file = open("log.json", "w")
+    json.dump(outputDict, file, indent = 1)
+    file.close()
+
+if __name__ == "__main__":
+    if len(sys.argv)>1:
+        filename = sys.argv[1]
+        main()
+
+
