@@ -1,0 +1,37 @@
+========================================
+SPOUSTENI APLIKACE
+========================================
+v pripade ze nastane problem s permission filu tcpstats:
+$ touch tcpstats
+$ chmod +x tcpstats
+
+spousteni tcpstats:
+$ python tcpstats slow-start.cap
+
+========================================
+INSTALACE POTREBNYCH KNIHOVEN
+========================================
+Python 2.7 version is required
+----------------------------------------
+
+$ sudo apt-get install build-essential checkinstall
+$ sudo apt-get install libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev
+$ cd ~/Downloads/
+$ wget http://python.org/ftp/python/2.7.10/Python-2.7.10.tgz
+$ tar -xvf Python-2.7.10.tgz
+$ cd Python-2.7.10
+$ ./configure
+$ make
+
+----------------------------------------
+dpkt library is required
+----------------------------------------
+
+install using aptitude:
+$ sudo apt-get update
+$ sudo apt-get install python-dpkt
+
+install from project folder:
+$ tar -xvf dpkt-1.8.7.tar.gz
+$ cd dpkt-1.8.7
+$ sudo python setup.py install

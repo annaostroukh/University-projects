@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <meta name="description Project PDS" content="">
+    <meta name="author xostro00" content="">
+
+    <title>xostro00 - TCPSTATS</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this template -->
+    <link href="css/dashboard.css" rel="stylesheet">
+  </head>
+  <body>
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="xlogin00.html">TCPSTATS</a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+        </div>
+      </div>
+    </nav>
+    <div class="container-fluid">
+      <div class="row">
+        <div class="col-sm-3 col-md-2 sidebar">
+          <ul class="nav nav-sidebar">
+            <li><a href="xlogin00.html">Graphs</a></li>
+            <li class="active"><a href="documentation.html">Documentation<span class="sr-only">(current)</span></a></li>
+          </ul>
+        </div>
+        <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
+          <h1 class="page-header">Documentation</h1>
+          <div class="placeholders">
+              <h2>Použité nástroje</h2>
+              <p>Implementační jazyk aplikace tcpstats je <a href="https://www.python.org/downloads/release/python-2710/">Python verze 2.7.10 </a>, webové stránky je HTML, CSS, JS.</br>Pro zpracování filu se zachycenými daty byla použita jednoduchá knihovna <a href="https://pypi.python.org/pypi/dpkt">dpkt verze 1.8.7</a>. Zejména třídy <i>pcap.py</i> - načtení PCAP filu; <i>ethernet.py</i>, <i>ip.py</i>, <i>tcp.py</i> - pro dolování dat.</br> Pro prezentace log souboru s analýzovanými daty ve formatu JSON slouží knihovna <a href="http://www.highcharts.com/">Highcharts</a>.</br>Pro rychlejší vývoj a moderní vzhled webové stránky byl použit framework <a href = "http://getbootstrap.com/">Bootstrap</a>.</p>
+          </div>
+           <div class="placeholders">
+            <h2>Použité zdroje</h2>
+            <p>Jelikož knihovna dpkt nemá rozsáhlou dokumentaci, pro vývoj aplikace byly použity následující články:</p>
+            <ul>
+                <li><a href="https://jon.oberheide.org/blog/2008/10/15/dpkt-tutorial-2-parsing-a-pcap-file/">Parsing a PCAP file</a></li>
+                <li><a href="http://www.commercialventvac.com/dpkt.html#mozTocId761132">Jeff Silverman dpkt documentation</a></li>
+                <li><a href="http://amirrazmjou.net/data-mining-pcap-files-using-weka-and-python-dpkt-library/">Data Mining PCAP files</a></li>
+            </ul>
+          </div>
+           <div class="placeholders">
+                <h2>Informace o TCP spojení</h2>
+                <p>Pro analýzu byl použit PCAP file z referenčního článku <a href="http://packetlife.net/blog/2011/jul/5/tcp-slow-start/">TCP Slow Start</a> k zadání projektu. Jak je zmíněno ve článku, pcap obsahuje data zachycená v průběhu stážení filu velikosti 1 MB přes protokol HTTP ze serveru.</p>
+                <h3>Sumarní statistiky</h3>
+                <p>File <i>slow-start.pcap</i> obsahuje 1246 paketů a celkový čas spojení je 0.77 sekund. Spojení probíhalo mezi klientem s IP adresou 192.168.1.40 a serverem s IP adresou 174.143.213.184.</p>
+                <h3>Výsledné statistiky</h3>
+                <p>Pro analýzu statistik, výsledky kterou jsou reprezentovaný na grafech, byla použita následující získaná z pcap filu informace:</p>
+                <ul>
+                    <li>Window</li>
+                    <ul>
+                        <li>Velikost window bufferu klienta/serveru</li>
+                        <li>Scale faktor získaný na začátku spojení (flagy SYN a SYN ACK)</li>
+                        <li>Časový okamžik přenosu</li>
+                        <li>Flagy paketů odlišné od SYN a SYN ACK</li>
+                    </ul>
+                    <li>Rychlost spojení</li>
+                    <ul>
+                        <li>Celkový počet přenesených bitů za zvolený časový interval (0.01 s)</li>
+                    </ul>
+                    <li>Round trip time</li>
+                    <ul>
+                        <li>Přítomnost u paketů vhodného flagu ACK</li>
+                        <li>Směr spojení od klienta k serveru</li>
+                        <li>Hodnota sekvenčního čísla odpovídající hodnotě acknowledgmentu</li>
+                    </ul>
+                    <li>Analýza sekvenčních čísel</li>
+                    <ul>
+                        <li>Přítomnost u paketů vhodných flagů SYN ACK/SYN, ACK, FIN ACK/FIN</li>
+                        <li>Hodnota sekvenčního čísla (jsou použity absolutní hodnoty z pcap filu)</li>
+                        <li>Časový přírůstek od SYN ACK paketu</li>
+                    </ul>
+                </ul>
+          </div> 
+        </div>
+      </div>
+    </div>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+  </body>
+</html>
