@@ -26,6 +26,7 @@ Application usage:
  1. Run tcpstats application with a TCP stream file on input which will generate log file
  2. Opening the web page which shows general information and builds graphs from the log file
 
- **Solution:** 
+
+**Solution:** 
 This project is implemented in Python with dpkt library for parsing TCP stream file. For the web page is used library Highcharts and JSON format for log file with computed statistics.
 
